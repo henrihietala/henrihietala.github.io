@@ -45,34 +45,122 @@
 </code></pre>
 
 <ul>
-<li><p>Create a .nuspec file to your WebRole/WebWorker project. A .nuspec file is a manifest that uses XML to describe your package.</p></li>
-<li><p>Publish packages to Octopus using TeamCity</p></li>
+<li>Create a .nuspec file to your WebRole/WebWorker project. A .nuspec file is a manifest that uses XML to describe your package. The idea is to copy your service definition and configuration files to the root of your solution for later use in Octopus Deploy.</li>
+</ul>
+
+<pre><code>&lt;?xml version="1.0"?&gt;
+&lt;package xmlns="http://schemas.microsoft.com/packaging/2011/08/nuspec.xsd"&gt;
+  &lt;metadata&gt;
+    &lt;version&gt;0.00&lt;/version&gt;
+    &lt;authors&gt;Your Authors&lt;/authors&gt;
+    &lt;owners&gt;Your Company&lt;/owners&gt;
+    &lt;id&gt;Your.ProjectId&lt;/id&gt;
+    &lt;title&gt;Azure Deployment Package&lt;/title&gt;
+    &lt;requireLicenseAcceptance&gt;false&lt;/requireLicenseAcceptance&gt;
+    &lt;description&gt;Azure Cloud Service&lt;/description&gt;
+    &lt;copyright&gt;Your Company 2014&lt;/copyright&gt;
+  &lt;/metadata&gt;
+  &lt;files&gt;
+    &lt;!-- Add the files (.cscfg, .csdef) from your Azure CS project to the root of your solution  --&gt;
+    &lt;file src="..\YourAzureCloudProjectName\*.*" /&gt;
+  &lt;/files&gt;
+&lt;/package&gt;
+</code></pre>
+
+<ul>
+<li>Add the following line to your role's .csproj: (This will copy all the files in your solution to the octopacked nuget file transferred to Octopus Deploy)</li>
+</ul>
+
+<pre><code>&lt;OctoPackEnforceAddingFiles&gt;True&lt;/OctoPackEnforceAddingFiles&gt;
+</code></pre>
+
+<ul>
+<li>Publish packages to Octopus using TeamCity</li>
 </ul>
 
 <h3>
 <a name="octopus-to-azure-deployment" class="anchor" href="#octopus-to-azure-deployment"><span class="octicon octicon-link"></span></a>Octopus to Azure deployment</h3>
 
-<p>First you should create a step template that has a couple of parameters. This is handy if you need to deploy more than one Cloud Service using the same Azure Subscription Id, Storage Account etc. If you need to deploy only one cloud service, don't bother doing a step template but just a normal "Deploy to Azure" step in your process.</p>
+<h2>
+<a name="script-module" class="anchor" href="#script-module"><span class="octicon octicon-link"></span></a>Script module</h2>
+
+<p>Go to your Script Modules and add a module that contains the following function:</p>
+
+<pre><code>&lt;# ############################ Create CSPKG file ############################ #&gt;
+&lt;# PARAMETERS:
+1. workingDirectory: Specify the path of the Visual Studio Solution
+2. webProjectName: Specify WebRole Project Name in the Visual Studio Solution
+3. cloudProjectName: Specify Cloud Service Project name of the Visual Studio Solution
+4. workerRoleAssembly: Specify worker role assembly name (dll) if you wan't to package a worker role cloud service.
+#&gt;
+Function generatePackage($workingDirectory, $projectName, $cloudProjectName, $workerRoleAssembly)
+{
+  Write-Host "workingDirectory: " $workingDirectory
+  Write-Host "projectName: " $projectName
+  Write-Host "cloudProjectName: " $cloudProjectName
+  Write-Host "workerRoleAssembly: " $workerRoleAssembly
+
+  # Declaration
+  $cspack = 'C:\Program Files\Microsoft SDKs\Azure\.NET SDK\v2.4\bin\cspack.exe'
+  $solutionDir = [string]::Format("{0}", $workingDirectory)
+  $webDir = $solutionDir
+  $packageOutDir = [string]::Format("{0}\{1}\{2}", $solutionDir, $cloudProjectName, "bin\Release\app.publish")
+  $rolePropertyFile = [string]::Format("{0}\{1}\{2}", $solutionDir, $cloudProjectName, "roleproperties.txt")
+
+  # Create Role Properties File – This property file specifies the .Net framework against which webrole is going to run.
+  New-Item $rolePropertyFile -Type file -Force -Value "TargetFrameWorkVersion=v4.5" | Out-Null
+  New-Item $packageOutDir -Type directory -Force | Out-Null
+
+  # CSPack command Definition
+  $serviceDefinitionPath = "ServiceDefinition.csdef"
+  $serviceConfigurationPath = "ServiceConfiguration.Cloud.cscfg"
+
+  # Check that $workerRoleAssembly ends with '.dll'
+  if($workerRoleAssembly.EndsWith(".dll")) { 
+    Write-Host "Worker Role Assembly provided"
+    $serviceRole = [string]::Format("/role:{0};{1};{2}", $projectName, $webDir, $workerRoleAssembly) 
+  } else {
+    $serviceRole = [string]::Format("/role:{0};{1}", $projectName, $webDir)
+  }
+  $rolePropertiesFile = [string]::Format("/rolePropertiesFile:{0};{1}", $projectName, $rolePropertyFile)
+  $sites = [string]::Format("/sites:{0};Web;{1}", $projectName, $webDir)
+  $packageOutput = [string]::Format("/out:{0}\{1}.cspkg", $packageOutDir, $cloudProjectName)
+
+  # Build CSPKG file
+  &amp; $cspack $serviceDefinitionPath $serviceRole $rolePropertiesFile $sites $packageOutput /useCtpPackageFormat | Out-Null
+
+  # Copy configuration file
+  Copy-Item $serviceConfigurationPath $packageOutDir
+
+  # Remove Role Properties File
+  Remove-Item -Path $rolePropertyFile -Force | Out-Null
+}
+</code></pre>
+
+<p>The script takes 4 arguments:</p>
+
+<ol>
+<li>Working directory. You can use <code>(Get-Item -Path ".\" -Verbose).FullName</code> to get the current execution path. This works for most of the cases with Azure Cloud Services.</li>
+<li>Project name. This is the "role project"'s name.</li>
+<li>Cloud project name. This is the cloud project name in your solution that contains the cscfg and csdef files.</li>
+<li>Worker role assembly [<strong>OPTIONAL</strong>]. Provide the worker role assembly name (e.g. WorkerRole.dll) if you wan't to package a worker role cloud service. Cspack.exe takes additional parameter for /role if your project is a worker role.</li>
+</ol>
+
+<p>You can enable the script module for your Octopus Project by clicking the "Configure script modules for this project" link in the project page.</p>
+
+<h2>
+<a name="step-template" class="anchor" href="#step-template"><span class="octicon octicon-link"></span></a>Step template</h2>
+
+<p>Ok, now you should create a step template that has a couple of parameters. This is handy if you need to deploy more than one Cloud Service using the same Azure Subscription Id, Storage Account etc. If you need to deploy only one cloud service, don't bother doing a step template but just a normal "Deploy to Azure" step in your process.</p>
 
 <p>Add Custom PowerShell script to the template. This will allow you to execute custom PS scripts in three different phases of your deployment process: Pre-Deploy, Deployment, Post-Deploy.</p>
 
 <p>You are interested in executing custom PowerShell script in <strong>Deployment</strong> phase. This will be executed after your .config transformations (connectionString, appSettings..). The script you wan't to execute will package your project into a Azure Cloud Service <strong>.cspkg</strong> package that can be deployed to Azure. Octopus will automatically find the .cspkg file so all you need to worry about is generating it (no matter where).</p>
 
-<p>Go to your Script Modules and add a module that contains the following function:</p>
-
-<pre><code>Function generatePackage() {
-  &lt;# I will add the script later on. #&gt;
-}
-</code></pre>
-
-<p>You can enable the script module for your Octopus Project by clicking the "Configure script modules for this project" link in the project page.</p>
-
 <p>After you have added and enabled the script module, you can call its functions in your Deployment Step template. Call the generatePackage function in Deployment phase like this:</p>
 
-<pre><code>generatePackage -workingDirectory ...
+<pre><code>generatePackage -workingDirectory (Get-Item -Path ".\" -Verbose).FullName -projectName "WorkerRole" -cloudProjectName "WorkerRole.Azure" -workerRoleAssembly "Optional.dll"
 </code></pre>
-
-<p><em>To be continued...</em></p>
       </section>
     </div>
 
