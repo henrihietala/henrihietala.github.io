@@ -38,7 +38,7 @@
 <a name="teamcity-to-octopus" class="anchor" href="#teamcity-to-octopus"><span class="octicon octicon-link"></span></a>TeamCity to Octopus</h3>
 
 <ul>
-<li>Install OctoPack NuGet to your WebRole/WebWorker project. TeamCity has an option to automatically create OctoPacks of projects that have the <a href="https://www.nuget.org/packages/OctoPack/">OctoPack NuGet</a> installed. Make sure you turn that on.</li>
+<li>Install OctoPack NuGet to your WebRole/WorkerRole project. TeamCity has an option to automatically create OctoPacks of projects that have the <a href="https://www.nuget.org/packages/OctoPack/">OctoPack NuGet</a> installed. Make sure you turn that on.</li>
 </ul>
 
 <pre><code>PM &gt; Install-Package OctoPack
@@ -157,7 +157,7 @@ Function generatePackage($workingDirectory, $projectName, $cloudProjectName, $wo
 
 <p><img src="http://henrihietala.github.io/images/Octopus_step_template_data.jpg" alt="Octopus Deploy: Step template form data"></p>
 
-<p>I've filled the form with variables that I have specified in my projects variables.</p>
+<p>I've filled the form with variables that I have specified in my project's variables.</p>
 
 <p>Then enable "Custom PowerShell scripts" for the template. This will allow you to execute custom PS scripts in three different phases of your deployment process: Pre-Deploy, Deployment, Post-Deploy.</p>
 
