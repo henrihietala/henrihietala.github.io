@@ -68,7 +68,7 @@
 </code></pre>
 
 <ul>
-<li>Add the following line to your role's .csproj: (This will copy all the files in your solution to the octopacked nuget file transferred to Octopus Deploy)</li>
+<li>Add the following line to your role's .csproj inside the <code>&lt;PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' "&gt;&lt;/PropertyGroup&gt;</code> block: (This will copy all the files in your solution to the octopacked nuget file transferred to Octopus Deploy)</li>
 </ul>
 
 <pre><code>&lt;OctoPackEnforceAddingFiles&gt;True&lt;/OctoPackEnforceAddingFiles&gt;
