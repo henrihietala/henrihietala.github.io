@@ -81,8 +81,7 @@
 <h3>
 <a name="octopus-to-azure-deployment" class="anchor" href="#octopus-to-azure-deployment"><span class="octicon octicon-link"></span></a>Octopus to Azure deployment</h3>
 
-<h2>
-<a name="script-module" class="anchor" href="#script-module"><span class="octicon octicon-link"></span></a>Script module</h2>
+<p><strong>Script module</strong></p>
 
 <p>Go to your Script Modules and add a module that contains the following function:</p>
 
@@ -148,19 +147,32 @@ Function generatePackage($workingDirectory, $projectName, $cloudProjectName, $wo
 
 <p>You can enable the script module for your Octopus Project by clicking the "Configure script modules for this project" link in the project page.</p>
 
-<h2>
-<a name="step-template" class="anchor" href="#step-template"><span class="octicon octicon-link"></span></a>Step template</h2>
+<p><strong>Step template</strong></p>
 
-<p>Ok, now you should create a step template that has a couple of parameters. This is handy if you need to deploy more than one Cloud Service using the same Azure Subscription Id, Storage Account etc. If you need to deploy only one cloud service, don't bother doing a step template but just a normal "Deploy to Azure" step in your process.</p>
+<p>Ok, now you should create a step template (choose "Deploy to Windows Azure" as template) that has a couple of parameters. This is handy if you need to deploy more than one Cloud Service using the same Azure Subscription Id, Storage Account etc. If you need to deploy only one cloud service, don't bother doing a step template but just a normal "Deploy to Azure" step in your process.</p>
 
-<p>Add Custom PowerShell script to the template. This will allow you to execute custom PS scripts in three different phases of your deployment process: Pre-Deploy, Deployment, Post-Deploy.</p>
+<p><img src="http://henrihietala.github.io/images/Octopus_step_template_parameters.jpg" alt="Octopus Deploy: Step template parameters"></p>
 
-<p>You are interested in executing custom PowerShell script in <strong>Deployment</strong> phase. This will be executed after your .config transformations (connectionString, appSettings..). The script you wan't to execute will package your project into a Azure Cloud Service <strong>.cspkg</strong> package that can be deployed to Azure. Octopus will automatically find the .cspkg file so all you need to worry about is generating it (no matter where).</p>
+<p>Prefill the step template form inherited from "Deploy to Windows Azure" template with your Azure info.</p>
 
-<p>After you have added and enabled the script module, you can call its functions in your Deployment Step template. Call the generatePackage function in Deployment phase like this:</p>
+<p><img src="http://henrihietala.github.io/images/Octopus_step_template_data.jpg" alt="Octopus Deploy: Step template form data"></p>
 
-<pre><code>generatePackage -workingDirectory (Get-Item -Path ".\" -Verbose).FullName -projectName "WorkerRole" -cloudProjectName "WorkerRole.Azure" -workerRoleAssembly "Optional.dll"
+<p>I've filled the form with variables that I have specified in my projects variables.</p>
+
+<p>Then enable "Custom PowerShell scripts" for the template. This will allow you to execute custom PS scripts in three different phases of your deployment process: Pre-Deploy, Deployment, Post-Deploy.</p>
+
+<p><img src="http://henrihietala.github.io/images/Octopus_step_template_configure_features.jpg" alt="Octopus Deploy: Step template features"></p>
+
+<p>You are interested in executing a custom PowerShell script in <strong>Deployment</strong> phase. This will be executed after your .config transformations (connectionString, appSettings..). The script you wan't to execute will package your project into a Azure Cloud Service <strong>.cspkg</strong> package that can be deployed to Azure. Octopus will automatically find the .cspkg file so all you need to worry about is generating it (no matter where).</p>
+
+<p>After you have added and enabled the script module, you can call its functions in your deployment step template. Call the generatePackage function in deployment phase like this:</p>
+
+<pre><code>generatePackage -workingDirectory (Get-Item -Path ".\" -Verbose).FullName -webProjectName "#{WebProjectName}" -cloudProjectName "#{CloudProjectName}" -workerRoleAssembly "#{WorkerRoleAssembly}"
 </code></pre>
+
+<p>Notice that I'm using argument values as variables. Those variables are actually the step templates parameters.</p>
+
+<p>Enable "<strong>Replace appSettings and connectionString entries in any .config files</strong>" and "<strong>Automatically run configuration transformation files</strong>" in step template's settings.</p>
       </section>
     </div>
 
