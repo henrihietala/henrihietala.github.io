@@ -82,7 +82,7 @@
 <h3>
 <a name="octopus-to-azure-deployment" class="anchor" href="#octopus-to-azure-deployment"><span class="octicon octicon-link"></span></a>Octopus to Azure deployment</h3>
 
-<h4>PowerShell script to create Azure Cloud service package (.cspkg)</h4>
+<p><strong>Script module</strong></p>
 
 <p>Go to your Script Modules and add a module that contains the following function:</p>
 
@@ -148,7 +148,7 @@ Function generatePackage($workingDirectory, $projectName, $cloudProjectName, $wo
 
 <p>You can enable the script module for your Octopus Project by clicking the "Configure script modules for this project" link in the project page.</p>
 
-<h4>Octopus Deploy step template</h4>
+<p><strong>Step template</strong></p>
 
 <p>Ok, now you should create a step template (choose "Deploy to Windows Azure" as template) that has a couple of parameters. This is handy if you need to deploy more than one Cloud Service using the same Azure Subscription Id, Storage Account etc. If you need to deploy only one cloud service, don't bother doing a step template but just a normal "Deploy to Azure" step in your process.</p>
 
@@ -175,7 +175,7 @@ Function generatePackage($workingDirectory, $projectName, $cloudProjectName, $wo
 
 <p>Enable "<strong>Replace appSettings and connectionString entries in any .config files</strong>" and "<strong>Automatically run configuration transformation files</strong>" in step template's settings.</p>
 
-<h4>Create process deployment steps</h4>
+<p><strong>Create the deployment steps</strong></p>
 
 <p>Now you are ready to make use of the step template. Just add a new step in your project process that uses your step template.</p>
         </section>
@@ -188,6 +188,16 @@ Function generatePackage($workingDirectory, $projectName, $cloudProjectName, $wo
       </div>
     </div>
 
-  
+            <script type="text/javascript">
+            var gaJsHost = (("https:" == document.location.protocol) ? "https://ssl." : "http://www.");
+            document.write(unescape("%3Cscript src='" + gaJsHost + "google-analytics.com/ga.js' type='text/javascript'%3E%3C/script%3E"));
+          </script>
+          <script type="text/javascript">
+            try {
+              var pageTracker = _gat._getTracker("UA-55997809-1");
+            pageTracker._trackPageview();
+            } catch(err) {}
+          </script>
+
   </body>
 </html>
